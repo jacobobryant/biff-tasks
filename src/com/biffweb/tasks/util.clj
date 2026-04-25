@@ -44,8 +44,7 @@
 (defn exists? [f]
   (.exists (io/file f)))
 
-(defn- remote-destination [{:biff.tasks/keys [server deployment-name]
-                            :or {deployment-name "app"}}]
+(defn- remote-destination [{:biff.tasks/keys [server deployment-name]}]
   (str deployment-name "@" server))
 
 (defn- deploy-file-spec [file]
@@ -72,8 +71,10 @@
 
 (def read-config
   (memoize (fn []
-             ((requiring-resolve 'com.biffweb.config/use-aero-config)
-              {:biff.config/skip-validation true}))))
+             (merge
+              {:biff.tasks/deployment-name "app"}
+              ((requiring-resolve 'com.biffweb.config/use-aero-config)
+               {:biff.config/skip-validation true})))))
 
 (def ^:dynamic *shell-env* nil)
 
@@ -127,8 +128,7 @@
 (defn ssh-run [ctx & args]
   (apply shell "ssh" (remote-destination ctx) args))
 
-(defn push-files-rsync [{:biff.tasks/keys [server deployment-name deploy-untracked-files]
-                         :or {deployment-name "app"}}]
+(defn push-files-rsync [{:biff.tasks/keys [server deployment-name deploy-untracked-files]}]
   (let [files (->> (:out (sh/sh "git" "ls-files"))
                    str/split-lines
                    (map #(str/replace % #"/.*" ""))
@@ -151,13 +151,12 @@
                                  ":" remote))))))
 
 (defn push-files-git [{:biff.tasks/keys [deploy-cmd
-                                          git-deploy-cmd
-                                          deploy-from
-                                          deploy-to
-                                          deploy-untracked-files
-                                          server
-                                          deployment-name]
-                         :or {deployment-name "app"}}]
+                                         git-deploy-cmd
+                                         deploy-from
+                                         deploy-to
+                                         deploy-untracked-files
+                                         server
+                                         deployment-name]}]
   (when-some [files (not-empty (filterv (comp exists? :local)
                                         (deploy-file-specs deploy-untracked-files)))]
     (when-some [dirs (->> files
