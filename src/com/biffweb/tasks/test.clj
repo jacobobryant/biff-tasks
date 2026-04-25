@@ -12,7 +12,7 @@
                             "-cp" (System/getProperty "java.class.path")
                             "clojure.main"
                             "-e"
-                            "(let [{:keys [fail error]} ((requiring-resolve 'cognitect.test-runner.api/test) {:dirs [\"test\"]})]\n  (shutdown-agents)\n  (System/exit (if (zero? (+ fail error)) 0 1)))")
+                            "(let [{:keys [fail error] :or {fail 0 error 0}} (or ((requiring-resolve 'cognitect.test-runner.api/test) {:dirs [\"test\"]}) {})]\n  (shutdown-agents)\n  (System/exit (if (zero? (+ fail error)) 0 1)))")
         exit-code (.waitFor proc)]
     (when-not (zero? exit-code)
       (throw (ex-info "Tests failed" {:exit exit-code})))))
