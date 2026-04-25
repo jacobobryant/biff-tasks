@@ -44,9 +44,9 @@
 (defn exists? [f]
   (.exists (io/file f)))
 
-(defn- remote-destination [{:biff.tasks/keys [server prod-dir]
-                            :or {prod-dir "app"}}]
-  (str prod-dir "@" server))
+(defn- remote-destination [{:biff.tasks/keys [server deployment-name]
+                            :or {deployment-name "app"}}]
+  (str deployment-name "@" server))
 
 (defn- deploy-file-spec [file]
   (cond
@@ -127,8 +127,8 @@
 (defn ssh-run [ctx & args]
   (apply shell "ssh" (remote-destination ctx) args))
 
-(defn push-files-rsync [{:biff.tasks/keys [server prod-dir deploy-untracked-files]
-                         :or {prod-dir "app"}}]
+(defn push-files-rsync [{:biff.tasks/keys [server deployment-name deploy-untracked-files]
+                         :or {deployment-name "app"}}]
   (let [files (->> (:out (sh/sh "git" "ls-files"))
                    str/split-lines
                    (map #(str/replace % #"/.*" ""))
@@ -137,27 +137,27 @@
     (doseq [{:keys [local]} (deploy-file-specs deploy-untracked-files)]
       (when (and (not (windows?)) (exists? local))
         ((requiring-resolve 'babashka.fs/set-posix-file-permissions) local "rw-------")))
-    (->> (concat ["rsync" "--archive" "--verbose" "--relative" "--include='**.gitignore'"
-                  "--exclude='/.git'" "--filter=:- .gitignore" "--delete-after" "--protocol=29"]
-                 files
-                 [(str (remote-destination {:biff.tasks/server server
-                                            :biff.tasks/prod-dir prod-dir})
-                       ":")])
-         (apply shell))
-    (doseq [{:keys [local remote]} (deploy-file-specs deploy-untracked-files)]
-      (when (exists? local)
-        (shell "scp" local (str (remote-destination {:biff.tasks/server server
-                                                     :biff.tasks/prod-dir prod-dir})
-                                ":" remote))))))
+     (->> (concat ["rsync" "--archive" "--verbose" "--relative" "--include='**.gitignore'"
+                   "--exclude='/.git'" "--filter=:- .gitignore" "--delete-after" "--protocol=29"]
+                  files
+                  [(str (remote-destination {:biff.tasks/server server
+                                             :biff.tasks/deployment-name deployment-name})
+                        ":")])
+          (apply shell))
+     (doseq [{:keys [local remote]} (deploy-file-specs deploy-untracked-files)]
+       (when (exists? local)
+         (shell "scp" local (str (remote-destination {:biff.tasks/server server
+                                                      :biff.tasks/deployment-name deployment-name})
+                                 ":" remote))))))
 
 (defn push-files-git [{:biff.tasks/keys [deploy-cmd
-                                         git-deploy-cmd
-                                         deploy-from
-                                         deploy-to
-                                         deploy-untracked-files
-                                         server
-                                         prod-dir]
-                        :or {prod-dir "app"}}]
+                                          git-deploy-cmd
+                                          deploy-from
+                                          deploy-to
+                                          deploy-untracked-files
+                                          server
+                                          deployment-name]
+                         :or {deployment-name "app"}}]
   (when-some [files (not-empty (filterv (comp exists? :local)
                                         (deploy-file-specs deploy-untracked-files)))]
     (when-some [dirs (->> files
@@ -165,9 +165,9 @@
                                       (requiring-resolve 'babashka.fs/parent)
                                       :remote))
                           not-empty)]
-      (apply shell "ssh" (str prod-dir "@" server) "mkdir" "-p" dirs))
+      (apply shell "ssh" (str deployment-name "@" server) "mkdir" "-p" dirs))
     (doseq [{:keys [local remote]} files]
-      (shell "scp" local (str prod-dir "@" server ":" remote))))
+      (shell "scp" local (str deployment-name "@" server ":" remote))))
   ;; deploy-cmd, deploy-from, and deploy-to are all deprecated (but still supported for backwards compatibility)
   (if-some [git-deploy-cmd (or git-deploy-cmd deploy-cmd)]
     (apply shell git-deploy-cmd)
