@@ -1,8 +1,7 @@
 (ns com.biffweb.tasks.test
-  (:require [clojure.java.shell :as sh]))
+  (:refer-clojure :exclude [test]))
 
 (defn test
-  "Runs `clojure.test` via Cognitect's test runner."
+  "Runs project tests from the test/ path."
   []
-  (System/exit
-   (:exit (sh/sh "clojure" "-X:test"))))
+  ((requiring-resolve 'cognitect.test-runner.api/test) {:dirs ["test"]}))
