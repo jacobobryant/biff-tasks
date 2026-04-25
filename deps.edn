@@ -1,5 +1,5 @@
-{:deps {io.github.biffweb/config      {:git/tag "v1.0" :git/sha "cc7ba13"}
-        io.github.biffweb/cljrun      {:git/tag "v1.0" :git/sha "f10b128"}
+{:deps {io.github.jacobobryant/biff-config {:git/sha "3e067dbacdfcad6d12c003346188a4f713628bc7"}
+        io.github.jacobobryant/biff-cljrun {:git/sha "d3f71eb8f21bb3ad28cc268dce2a5973529a35b4"}
         babashka/fs                   {:mvn/version "0.5.20"}
         babashka/process              {:mvn/version "0.5.21"}
         cider/cider-nrepl             {:mvn/version "0.28.3"}

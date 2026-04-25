@@ -4,11 +4,10 @@
    Or at least, if they do have external deps, they use `requiring-resolve` so as not to slow down
    other tasks."
   (:refer-clojure :exclude [future])
-  (:require
-   [clojure.java.io :as io]
-   [clojure.java.shell :as sh]
-   [clojure.string :as str]
-   [clojure.stacktrace :as st]))
+  (:require [clojure.java.io :as io]
+            [clojure.java.shell :as sh]
+            [clojure.stacktrace :as st]
+            [clojure.string :as str]))
 
 (defmacro future [& body]
   `(clojure.core/future
@@ -20,7 +19,7 @@
 
 (defn windows? []
   (-> (System/getProperty "os.name")
-      (str/lower-case)
+      str/lower-case
       (str/includes? "windows")))
 
 (defn which [& args]
@@ -45,15 +44,31 @@
 (defn exists? [f]
   (.exists (io/file f)))
 
+(defn- remote-destination [{:biff.tasks/keys [server prod-dir]
+                            :or {prod-dir "app"}}]
+  (str prod-dir "@" server))
+
+(defn- deploy-file-spec [file]
+  (cond
+    (string? file) {:local file :remote file}
+    (vector? file) (let [[local remote] file]
+                     {:local local :remote remote})
+    (map? file) {:local (or (:local file) (:src file))
+                 :remote (or (:remote file) (:dest file) (:local file) (:src file))}
+    :else (throw (ex-info "Invalid deploy file spec" {:file file}))))
+
+(defn- deploy-file-specs [deploy-untracked-files]
+  (mapv deploy-file-spec deploy-untracked-files))
+
 (defn tailwind-installation-info []
   (let [local-bin-installed (exists? (local-tailwind-path))]
     {:local-bin-installed local-bin-installed
      :tailwind-cmd
      (cond
-       (bun-pkg-installed? "tailwindcss")                    :bun
-       (sh-success? "npm" "list" "tailwindcss")              :npm
+       (bun-pkg-installed? "tailwindcss") :bun
+       (sh-success? "npm" "list" "tailwindcss") :npm
        (and (which "tailwindcss") (not local-bin-installed)) :global-bin
-       :else                                                 :local-bin)}))
+       :else :local-bin)}))
 
 (def read-config
   (memoize (fn []
@@ -109,37 +124,50 @@
 (defmacro with-ssh-agent [ctx & body]
   `(with-ssh-agent* ~ctx (fn [] ~@body)))
 
-(defn ssh-run [{:keys [biff.tasks/server]} & args]
-  (apply shell "ssh" (str "app@" server) args))
+(defn ssh-run [ctx & args]
+  (apply shell "ssh" (remote-destination ctx) args))
 
-(defn push-files-rsync [{:biff.tasks/keys [server deploy-untracked-files]}]
+(defn push-files-rsync [{:biff.tasks/keys [server prod-dir deploy-untracked-files]
+                         :or {prod-dir "app"}}]
   (let [files (->> (:out (sh/sh "git" "ls-files"))
                    str/split-lines
                    (map #(str/replace % #"/.*" ""))
                    distinct
-                   (concat deploy-untracked-files)
                    (filter exists?))]
-    (when (and (not (windows?)) (exists? "config.env"))
-      ((requiring-resolve 'babashka.fs/set-posix-file-permissions) "config.env" "rw-------"))
+    (doseq [{:keys [local]} (deploy-file-specs deploy-untracked-files)]
+      (when (and (not (windows?)) (exists? local))
+        ((requiring-resolve 'babashka.fs/set-posix-file-permissions) local "rw-------")))
     (->> (concat ["rsync" "--archive" "--verbose" "--relative" "--include='**.gitignore'"
                   "--exclude='/.git'" "--filter=:- .gitignore" "--delete-after" "--protocol=29"]
                  files
-                 [(str "app@" server ":")])
-         (apply shell))))
+                 [(str (remote-destination {:biff.tasks/server server
+                                            :biff.tasks/prod-dir prod-dir})
+                       ":")])
+         (apply shell))
+    (doseq [{:keys [local remote]} (deploy-file-specs deploy-untracked-files)]
+      (when (exists? local)
+        (shell "scp" local (str (remote-destination {:biff.tasks/server server
+                                                     :biff.tasks/prod-dir prod-dir})
+                                ":" remote))))))
 
 (defn push-files-git [{:biff.tasks/keys [deploy-cmd
                                          git-deploy-cmd
                                          deploy-from
                                          deploy-to
                                          deploy-untracked-files
-                                         server]}]
-  (when-some [files (not-empty (filterv exists? deploy-untracked-files))]
+                                         server
+                                         prod-dir]
+                        :or {prod-dir "app"}}]
+  (when-some [files (not-empty (filterv (comp exists? :local)
+                                        (deploy-file-specs deploy-untracked-files)))]
     (when-some [dirs (->> files
-                          (keep (comp not-empty (requiring-resolve 'babashka.fs/parent)))
+                          (keep (comp not-empty
+                                      (requiring-resolve 'babashka.fs/parent)
+                                      :remote))
                           not-empty)]
-      (apply shell "ssh" (str "app@" server) "mkdir" "-p" dirs))
-    (doseq [file files]
-      (shell "scp" file (str "app@" server ":" file))))
+      (apply shell "ssh" (str prod-dir "@" server) "mkdir" "-p" dirs))
+    (doseq [{:keys [local remote]} files]
+      (shell "scp" local (str prod-dir "@" server ":" remote))))
   ;; deploy-cmd, deploy-from, and deploy-to are all deprecated (but still supported for backwards compatibility)
   (if-some [git-deploy-cmd (or git-deploy-cmd deploy-cmd)]
     (apply shell git-deploy-cmd)

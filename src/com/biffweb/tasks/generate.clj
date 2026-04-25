@@ -1,8 +1,7 @@
-(ns com.biffweb.tasks.generate 
-  (:require
-   [clojure.java.io :as io]
-   [clojure.string :as str]
-   [com.biffweb.tasks.util :as util]))
+(ns com.biffweb.tasks.generate
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str]
+            [com.biffweb.tasks.util :as util]))
 
 (defn- new-secret [length]
   (let [buffer (byte-array length)]
@@ -19,11 +18,12 @@
   (println))
 
 (defn generate-config
-  "Creates a new config.env file if one doesn't already exist."
+  "Creates new config.env and config.prod.env files if they don't already exist."
   []
-  (if (util/exists? "config.env")
+  (if (or (util/exists? "config.env")
+          (util/exists? "config.prod.env"))
     (binding [*out* *err*]
-      (println "config.env already exists. If you want to generate a new file, run `mv config.env config.env.backup` first.")
+      (println "config.env or config.prod.env already exists. If you want to generate new files, move them out of the way first.")
       (System/exit 3))
     (let [contents (slurp (io/resource "config.template.env"))
           contents (str/replace contents
@@ -31,4 +31,5 @@
                                 (fn [[_ n]]
                                   (new-secret (parse-long n))))]
       (spit "config.env" contents)
-      (println "New config generated and written to config.env."))))
+      (spit "config.prod.env" contents)
+      (println "New config generated and written to config.env and config.prod.env."))))
