@@ -1,11 +1,12 @@
-{:deps {io.github.jacobobryant/biff-config {:git/sha "3e067dbacdfcad6d12c003346188a4f713628bc7"}
-        io.github.jacobobryant/biff-cljrun {:git/sha "d3f71eb8f21bb3ad28cc268dce2a5973529a35b4"}
-        babashka/fs                   {:mvn/version "0.5.20"}
-        babashka/process              {:mvn/version "0.5.21"}
-        cider/cider-nrepl             {:mvn/version "0.28.3"}
-        com.nextjournal/beholder      {:mvn/version "1.0.2"}
-        hato/hato                     {:mvn/version "0.9.0"}
-        io.github.clojure/tools.build {:git/tag "v0.9.6" :git/sha "8e78bcc"}
-        nrepl/nrepl                   {:mvn/version "1.0.0"}
-        refactor-nrepl/refactor-nrepl {:mvn/version "3.6.0"}}
- :paths ["src"]}
+ {:deps {io.github.jacobobryant/biff-config {:git/sha "3e067dbacdfcad6d12c003346188a4f713628bc7"}
+         io.github.jacobobryant/biff-cljrun {:git/sha "d3f71eb8f21bb3ad28cc268dce2a5973529a35b4"}
+         babashka/fs                   {:mvn/version "0.5.20"}
+         babashka/process              {:mvn/version "0.5.21"}
+         cider/cider-nrepl             {:mvn/version "0.28.3"}
+         com.nextjournal/beholder      {:mvn/version "1.0.2"}
+         hato/hato                     {:mvn/version "0.9.0"}
+         io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}
+         io.github.clojure/tools.build {:git/tag "v0.9.6" :git/sha "8e78bcc"}
+         nrepl/nrepl                   {:mvn/version "1.0.0"}
+         refactor-nrepl/refactor-nrepl {:mvn/version "3.6.0"}}
+  :paths ["src"]}

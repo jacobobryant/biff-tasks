@@ -17,6 +17,12 @@
   (println (str "JWT_SECRET=" (new-secret 32)))
   (println))
 
+(defn- render-config-template [resource-name]
+  (-> (slurp (io/resource resource-name))
+       (str/replace #"\{\{\s+new-secret\s+(\d+)\s+\}\}"
+                    (fn [[_ n]]
+                      (new-secret (parse-long n))))))
+
 (defn generate-config
   "Creates new config.env and config.prod.env files if they don't already exist."
   []
@@ -25,11 +31,8 @@
     (binding [*out* *err*]
       (println "config.env or config.prod.env already exists. If you want to generate new files, move them out of the way first.")
       (System/exit 3))
-    (let [contents (slurp (io/resource "config.template.env"))
-          contents (str/replace contents
-                                #"\{\{\s+new-secret\s+(\d+)\s+\}\}"
-                                (fn [[_ n]]
-                                  (new-secret (parse-long n))))]
-      (spit "config.env" contents)
-      (spit "config.prod.env" contents)
+    (let [dev-contents (render-config-template "TEMPLATE.config.env")
+          prod-contents (render-config-template "TEMPLATE.config.prod.env")]
+      (spit "config.env" dev-contents)
+      (spit "config.prod.env" prod-contents)
       (println "New config generated and written to config.env and config.prod.env."))))
