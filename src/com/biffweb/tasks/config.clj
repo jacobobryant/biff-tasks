@@ -3,4 +3,4 @@
   (:require [com.biffweb.config :as config]))
 
 (def read
-  (memoize (fn [] (config/use-aero-config {:biff.config/skip-validation true}))))
+  (memoize (fn [] (config/use-aero-config {}))))
