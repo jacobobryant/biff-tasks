@@ -1,4 +1,4 @@
- {:deps {io.github.jacobobryant/biff-config {:git/sha "3e067dbacdfcad6d12c003346188a4f713628bc7"}
+ {:deps {io.github.jacobobryant/biff-config {:git/sha "2bac210c9bd52f34d84cab515f2d9a0d19815808"}
          io.github.jacobobryant/biff-cljrun {:git/sha "d3f71eb8f21bb3ad28cc268dce2a5973529a35b4"}
          babashka/fs                   {:mvn/version "0.5.20"}
          babashka/process              {:mvn/version "0.5.21"}

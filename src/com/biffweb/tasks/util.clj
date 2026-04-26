@@ -74,7 +74,7 @@
              (merge
               {:biff.tasks/deployment-name "app"}
               ((requiring-resolve 'com.biffweb.config/use-aero-config)
-               {:biff.config/skip-validation true})))))
+               {})))))
 
 (def ^:dynamic *shell-env* nil)
 
