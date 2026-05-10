@@ -1,38 +1,48 @@
 (ns com.biffweb.tasks.generate
   (:require [clojure.java.io :as io]
-            [clojure.string :as str]
-            [com.biffweb.tasks.util :as util]))
+            [clojure.string :as str]))
 
 (defn- new-secret [length]
   (let [buffer (byte-array length)]
     (.nextBytes (java.security.SecureRandom/getInstanceStrong) buffer)
     (.encodeToString (java.util.Base64/getEncoder) buffer)))
 
-(defn generate-secrets
-  "Prints new secrets to put in config.env."
-  []
-  (println "Put these in your config.env file:")
-  (println)
-  (println (str "COOKIE_SECRET=" (new-secret 16)))
-  (println (str "JWT_SECRET=" (new-secret 32)))
-  (println))
+(defn- project-root []
+  (io/file (System/getProperty "user.dir")))
+
+(defn- template-path [resource-name]
+  (let [resource-file (io/file (project-root) "resources" resource-name)]
+    (cond
+      (io/resource resource-name) [:resource resource-name]
+      (.exists resource-file) [:file resource-file]
+      :else (throw (ex-info "Config template not found"
+                            {:resource resource-name
+                             :path (.getPath resource-file)})))))
 
 (defn- render-config-template [resource-name]
-  (-> (slurp (io/resource resource-name))
+  (-> (let [[source path] (template-path resource-name)]
+        (case source
+          :resource (slurp (io/resource path))
+          :file (slurp path)))
        (str/replace #"\{\{\s+new-secret\s+(\d+)\s+\}\}"
                     (fn [[_ n]]
                       (new-secret (parse-long n))))))
 
-(defn generate-config
-  "Creates new config.env and config.prod.env files if they don't already exist."
+(defn ensure-config-files
+  "Creates any missing config.env/config.prod.env files."
   []
-  (if (or (util/exists? "config.env")
-          (util/exists? "config.prod.env"))
-    (binding [*out* *err*]
-      (println "config.env or config.prod.env already exists. If you want to generate new files, move them out of the way first.")
-      (System/exit 3))
-    (let [dev-contents (render-config-template "TEMPLATE.config.env")
-          prod-contents (render-config-template "TEMPLATE.config.prod.env")]
-      (spit "config.env" dev-contents)
-      (spit "config.prod.env" prod-contents)
-      (println "New config generated and written to config.env and config.prod.env."))))
+  (let [targets [{:path "config.env"
+                  :resource "TEMPLATE.config.env"}
+                 {:path "config.prod.env"
+                  :resource "TEMPLATE.config.prod.env"}]
+        created (reduce (fn [created {:keys [path resource]}]
+                          (let [target-file (io/file (project-root) path)]
+                            (if (.exists target-file)
+                              created
+                              (do
+                                (spit target-file (render-config-template resource))
+                                (conj created path)))))
+                        []
+                        targets)]
+    (when (seq created)
+      (println "Generated" (str/join " and " created) "."))))

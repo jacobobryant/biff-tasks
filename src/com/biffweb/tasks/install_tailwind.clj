@@ -40,15 +40,21 @@
                  file)
         dest (io/file (local-tailwind-path))]
     (io/make-parents dest)
-    (println "Downloading"
-             (or tailwind-version "the latest version")
-             "of" file "...")
-    (when inferred
-      (println "If that's the wrong file, run `clj -M:dev install-tailwind <correct file>`"))
-    (println)
-    (println "After the download finishes, you can avoid downloading Tailwind again for"
-             "future projects if you copy it to your path, e.g. by running:")
-    (println "  sudo cp" (local-tailwind-path) "/usr/local/bin/tailwindcss")
-    (println)
-    (io/copy (:body (hato/get url {:as :stream :http-client {:redirect-policy :normal}})) dest)
-    (.setExecutable dest true)))
+     (println "Downloading"
+              (or tailwind-version "the latest version")
+              "of" file "...")
+     (when inferred
+      (println "If that's the wrong file, set `:biff.tasks/tailwind-build` in your config and run the command again."))
+     (println)
+     (println "After the download finishes, you can avoid downloading Tailwind again for"
+              "future projects if you copy it to your path, e.g. by running:")
+     (println "  sudo cp" (local-tailwind-path) "/usr/local/bin/tailwindcss")
+     (println)
+     (io/copy (:body (hato/get url {:as :stream :http-client {:redirect-policy :normal}})) dest)
+     (.setExecutable dest true)))
+
+(defn ensure-tailwind-installed []
+  (let [{:keys [local-bin-installed tailwind-cmd]} (util/tailwind-installation-info)]
+    (when (and (= tailwind-cmd :local-bin)
+               (not local-bin-installed))
+      (install-tailwind))))

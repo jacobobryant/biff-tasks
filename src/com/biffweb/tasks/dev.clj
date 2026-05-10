@@ -2,6 +2,8 @@
   (:require
    [clojure.java.io :as io]
    [com.biffweb.cljrun :as cljrun]
+   [com.biffweb.tasks.generate :as generate]
+   [com.biffweb.tasks.install-tailwind :as install-tailwind]
    [com.biffweb.tasks.util :as util]))
 
 (defn- install-js-deps-cmd []
@@ -24,17 +26,14 @@
     ;; target/resources won't be included in the classpath. Downside of not
     ;; using bb tasks anymore -- no longer have a lightweight parent process
     ;; that can create the directory before starting the JVM.
-    (do
-      (io/make-parents "target/resources/_")
-      (util/shell "clj" "-M:dev" "dev"))
-    (let [{:keys [biff.tasks/main-ns biff.nrepl/port]} (util/read-config)]
-      (when-not (util/exists? "config.env")
-        (cljrun/run-task "generate-config"))
-      (when (util/exists? "package.json")
-        (util/shell (install-js-deps-cmd)))
-      (let [{:keys [local-bin-installed tailwind-cmd]} (util/tailwind-installation-info)]
-        (when (and (= tailwind-cmd :local-bin) (not local-bin-installed))
-          (cljrun/run-task "install-tailwind")))
-      (util/future (cljrun/run-task "css" "--watch"))
-      (spit ".nrepl-port" port)
-      ((requiring-resolve (symbol (str main-ns) "-main"))))))
+     (do
+       (io/make-parents "target/resources/_")
+       (util/shell "clj" "-M:dev" "dev"))
+     (let [{:keys [biff.tasks/main-ns biff.nrepl/port]} (util/read-config)]
+       (generate/ensure-config-files)
+       (when (util/exists? "package.json")
+         (util/shell (install-js-deps-cmd)))
+       (install-tailwind/ensure-tailwind-installed)
+       (util/future (cljrun/run-task "css" "--watch"))
+       (spit ".nrepl-port" port)
+       ((requiring-resolve (symbol (str main-ns) "-main"))))))
