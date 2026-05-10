@@ -1,7 +1,7 @@
 (ns com.biffweb.tasks.css
-  (:require [clojure.java.io :as io]
-            [com.biffweb.cljrun :as cljrun]
-            [com.biffweb.tasks.util :as util]))
+   (:require [clojure.java.io :as io]
+             [com.biffweb.tasks.install-tailwind :as install-tailwind]
+             [com.biffweb.tasks.util :as util]))
 
 (defn css
   "Generates the target/resources/public/css/main.css file."
@@ -9,7 +9,7 @@
   (let [{:biff.tasks/keys [css-output]} (util/read-config)
         {:keys [local-bin-installed tailwind-cmd]} (util/tailwind-installation-info)]
     (when (and (= tailwind-cmd :local-bin) (not local-bin-installed))
-      (cljrun/run-task "install-tailwind"))
+      (install-tailwind/install-tailwind))
     (when (= tailwind-cmd :local-bin)
       (.setExecutable (io/file (util/local-tailwind-path)) true))
     (try
