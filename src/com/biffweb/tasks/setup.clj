@@ -1,5 +1,6 @@
 (ns com.biffweb.tasks.setup
   (:require [clojure.java.io :as io]
+            [clojure.java.shell :as sh]
             [clojure.string :as str]
             [com.biffweb.tasks.generate :as generate]
             [com.biffweb.tasks.install-tailwind :as install-tailwind]
@@ -21,28 +22,21 @@
       (str/replace "-" "_")
       (str/replace "." "/")))
 
-(defn- project-file? [relative-path]
-  (and (not-any? #(str/starts-with? relative-path %)
-                 [".git/" ".cpcache/" "node_modules/" "target/" "storage/"])
-       (or (contains? #{"README.md" "deps.edn"} relative-path)
-           (re-find #"\.(clj|cljc|cljs|edn|md|txt|css|html|json|yaml|yml|env)$"
-                    relative-path))))
-
-(defn- relative-path [file]
-  (-> (.toPath (project-root))
-      (.relativize (.toPath file))
-      str
-      (str/replace "\\" "/")))
+(defn- tracked-files []
+  (let [{:keys [exit out err]} (sh/sh "git" "ls-files" :dir (.getPath (project-root)))]
+    (when-not (zero? exit)
+      (throw (ex-info "git ls-files failed" {:exit exit :err err})))
+    (->> out
+         str/split-lines
+         (remove str/blank?))))
 
 (defn- rewrite-main-namespace! [new-main-ns]
   (let [old-path (ns->path template-main-ns)
         new-path (ns->path new-main-ns)
         root (project-root)
-        files (->> (file-seq root)
-                   (filter #(.isFile %))
-                   (map (fn [file] [file (relative-path file)]))
-                   (filter (fn [[_ relative-path]]
-                             (project-file? relative-path))))]
+        files (map (fn [relative-path]
+                     [(io/file root relative-path) relative-path])
+                   (tracked-files))]
     (doseq [[file relative-path] files]
       (let [dest-path (str/replace relative-path old-path new-path)
             dest-file (io/file root dest-path)

@@ -1,5 +1,6 @@
 (ns com.biffweb.tasks.setup-test
   (:require [clojure.java.io :as io]
+            [clojure.java.shell :as sh]
             [clojure.string :as str]
             [clojure.test :refer [deftest is testing]]
             [com.biffweb.tasks.install-tailwind :as install-tailwind]
@@ -36,6 +37,17 @@
 (defn- slurp-file [dir relative-path]
   (slurp (io/file dir relative-path)))
 
+(defn- sh! [dir & args]
+  (let [{:keys [exit err]} (apply sh/sh (concat args [:dir (.getPath dir)]))]
+    (when-not (zero? exit)
+      (throw (ex-info "Command failed" {:args args :err err :dir (.getPath dir)})))))
+
+(defn- init-git! [dir]
+  (sh! dir "git" "init")
+  (sh! dir "git" "config" "user.name" "Copilot")
+  (sh! dir "git" "config" "user.email" "copilot@example.com")
+  (sh! dir "git" "add" "."))
+
 (deftest setup-renames-template-namespace-and-creates-missing-files
   (with-temp-dir [dir]
     (write-file dir "deps.edn" "{:aliases {:prod {:main-opts [\"-m\" \"com.acme-app\"]}}}\n")
@@ -46,6 +58,7 @@
     (write-file dir "src/com/example.clj" "(ns com.acme-app)\n")
     (write-file dir "src/com/example/lib/foo.clj" "(ns com.acme-app.lib.foo)\n")
     (write-file dir "test/com/example/foo_test.clj" "(ns com.acme-app.foo-test)\n")
+    (init-git! dir)
     (let [tailwind-called? (atom false)]
       (with-user-dir dir
         (with-redefs [util/read-config (constantly {:biff.tasks/main-ns 'com.acme-app})
@@ -73,6 +86,7 @@
     (write-file dir "resources/TEMPLATE.config.env" "COOKIE_SECRET={{ new-secret 4 }}\n")
     (write-file dir "resources/TEMPLATE.config.prod.env" "COOKIE_SECRET={{ new-secret 4 }}\n")
     (write-file dir "config.env" "existing=true\n")
+    (init-git! dir)
     (let [tailwind-called? (atom false)]
       (with-user-dir dir
         (with-redefs [util/read-config (constantly {:biff.tasks/main-ns 'com.acme-app})
