@@ -29,6 +29,9 @@ in app-specific watcher code.
 - `dev` MUST NOT regenerate static HTML as part of the default Biff 2.0 flow.
 - `dev` MUST NOT do a hard refresh or hard restart automatically; users can do
   that manually when needed.
+- Beyond the explicit minified-CSS flag, `dev` SHOULD remain opinionated and
+  SHOULD NOT grow extra runtime config knobs for watcher/test behavior in the
+  first pass.
 
 ### Human vs. agent use
 
