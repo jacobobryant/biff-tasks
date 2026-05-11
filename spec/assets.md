@@ -50,8 +50,9 @@ Apply the default Biff 2.0 formatting rules with `cljfmt`.
 ## Non-goals
 
 - `format` does not need to format markdown specs.
+- `setup` does not need to generate `cljfmt` config for the first pass.
 
-## Open questions
+## Notes
 
-- Whether `setup` should also write a default `cljfmt.edn` or equivalent config
-  file when missing.
+- Starter apps may include their own checked-in `cljfmt` config as part of the
+  app template rather than having `setup` generate it.
