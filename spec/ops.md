@@ -90,6 +90,10 @@ canonical setup script shipped inside `biff-tasks`.
   name from config.
 - The setup script SHOULD be idempotent enough that rerunning it repairs or
   reapplies expected Biff-managed server state.
+- `prod-install` MUST own only the shared Biff server baseline, not arbitrary
+  app-specific provisioning.
+- App-specific extra provisioning SHOULD live in separate user-managed scripts or
+  tooling outside `biff-tasks`.
 - The setup script SHOULD create `/home/$APP/repo` as an empty directory.
 - The setup script MUST NOT own git repo bootstrap beyond creating that
   directory; `deploy` owns repo initialization.
