@@ -43,6 +43,13 @@ in app-specific watcher code.
   `.biff-dev-status.edn`.
 - `.biff-dev-status.edn` SHOULD record a single latest overall status in a form
   that agents or UI overlays can inspect easily.
+- The status file SHOULD support at least a `:running` state while eval/test
+  work is in progress.
+- `dev` SHOULD update the status file in a way that avoids getting stuck in
+  `:running` after failures or interruptions (for example, by using
+  try/finally-style cleanup around status transitions).
+- The status file SHOULD include rich failure details such as stack traces or
+  test output, not just a short summary.
 - If evaluation fails, `dev` SHOULD NOT run the test suite against stale code.
 - `dev` MUST run the full test suite on each relevant save, matching the old
   Biff behavior.
@@ -76,5 +83,4 @@ Start a local nREPL server without booting the app.
 ## Open questions
 
 - Exact flag name for agent/service CSS mode in `dev`.
-- Exact schema/content of `.biff-dev-status.edn` beyond the single overall
-  status model.
+- Exact schema/content of `.biff-dev-status.edn`.
