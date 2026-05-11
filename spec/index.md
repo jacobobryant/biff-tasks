@@ -27,7 +27,7 @@
 - `test`
 - `nrepl`
 - `deploy`
-- `prod-install` (tentative)
+- `prod-install`
 - `prod-restart`
 - `prod-nrepl`
 - `prod-logs`
@@ -44,5 +44,4 @@
 - How should `dev` surface evaluation/test failures so that coding agents notice
   them quickly?
 - What should the exact flag be for agent-friendly/minified CSS in `dev`?
-- Should provisioning ship as `prod-install`, or is there a better shape for
-  that command?
+- Exact config contract for `prod-install`.

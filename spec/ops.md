@@ -3,6 +3,7 @@
 ## Commands covered
 
 - `deploy`
+- `prod-install`
 - `prod-restart`
 - `prod-nrepl`
 - `prod-logs`
@@ -65,6 +66,46 @@ to reason about from a trusted machine.
 
 - `prod-restart` MUST restart the systemd-managed app service over SSH.
 
+## prod-install
+
+### Purpose
+
+Provision or refresh the shared Biff server setup on a target machine using the
+canonical setup script shipped inside `biff-tasks`.
+
+### Behavioral contract
+
+- `prod-install` MUST be fully non-interactive.
+- `prod-install` MUST read its required inputs from task config rather than
+  positional CLI arguments.
+- `prod-install` MUST source the canonical script from
+  `resources/com/biffweb/tasks/server-setup.sh`.
+- `prod-install` MUST upload that script to the server and run it remotely as
+  root.
+- `prod-install` MUST NOT require the app repo to check in its own copy of the
+  server setup script.
+- `prod-install` SHOULD support repeated runs on the same server so multiple
+  Biff apps can coexist.
+- The canonical setup script MUST support multiple apps on one server via an app
+  name from config.
+- The setup script SHOULD be idempotent enough that rerunning it repairs or
+  reapplies expected Biff-managed server state.
+- The setup script SHOULD create `/home/$APP/repo` as an empty directory.
+- The setup script MUST NOT own git repo bootstrap beyond creating that
+  directory; `deploy` owns repo initialization.
+
+### Recommended default direction
+
+- The first-pass production provisioning command SHOULD be `prod-install`.
+- The setup script SHOULD come from the new `biff-starter-sqlite` version and
+  then evolve centrally in `biff-tasks`.
+
+### Open questions
+
+- Exact config keys for app name, domain, and remote root host.
+- Whether `prod-install` should upload the script to a temp file path or to a
+  stable well-known path before executing it.
+
 ## prod-nrepl
 
 - `prod-nrepl` MUST open an SSH tunnel to the production nREPL port.
@@ -78,5 +119,3 @@ to reason about from a trusted machine.
 ## Open questions
 
 - Exact semantics of `--soft` if the old `prod-dev` flow is not carried forward.
-- Whether the first-pass provisioning flow should be a `prod-install` task or
-  something else.
