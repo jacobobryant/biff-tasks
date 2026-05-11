@@ -22,18 +22,27 @@ in app-specific watcher code.
 - `dev` MUST watch for changed Clojure source files and evaluate them.
 - `dev` MUST run tests after relevant file changes.
 - `dev` MUST keep CSS up to date during development.
+- `dev` SHOULD watch the same broad set of files as the old Biff dev workflow
+  rather than narrowly watching only one file type.
 - `dev` MUST NOT require app repos to carry their own dev-only watcher logic for
   file evaluation and test running.
 - `dev` MUST NOT regenerate static HTML as part of the default Biff 2.0 flow.
+- `dev` MUST NOT do a hard refresh or hard restart automatically; users can do
+  that manually when needed.
 
 ### Human vs. agent use
 
 - The default `dev` mode SHOULD optimize for fast local human feedback.
+- `dev` MUST default to unminified CSS output.
 - `dev` SHOULD support an explicit flag for agent/service mode so CSS can be
   built minified when desired.
+- Coding-agent sandboxes MAY run `dev` under a systemd service that uses the
+  minified-CSS flag.
 - Evaluation failures and test failures MUST be surfaced loudly in the terminal.
 - A machine-readable failure signal for coding agents is desirable but is not
   yet specified.
+- `dev` MUST run the full test suite on each relevant save, matching the old
+  Biff behavior.
 
 ## Test
 
@@ -64,6 +73,4 @@ Start a local nREPL server without booting the app.
 ## Open questions
 
 - Exact flag name for agent/service CSS mode in `dev`.
-- Whether test watching should include only changed namespaces or always run the
-  full suite.
 - Whether `dev` should expose a machine-readable error state for coding agents.
