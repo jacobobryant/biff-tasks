@@ -44,7 +44,6 @@ The initial default generated artifacts are:
   default generated workflow.
 - `setup` is not responsible for preserving compatibility with old Biff task
   names or config keys.
-- `setup` does not need to generate or manage `AGENTS.md` for the first pass.
 
 ## Open questions
 
@@ -53,6 +52,3 @@ The initial default generated artifacts are:
   tracked Clojure/EDN files.
 - Provisioning is intentionally not owned by `setup`; it will be specified
   separately in production-task specs.
-- Starter apps SHOULD include their own `AGENTS.md` guidance for any
-  Biff-specific agent workflow notes, including checking `.biff-dev-status.edn`
-  after file saves.

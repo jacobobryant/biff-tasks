@@ -41,8 +41,9 @@ in app-specific watcher code.
 - Evaluation failures and test failures MUST be surfaced loudly in the terminal.
 - `dev` MUST maintain a machine-readable status file at
   `.biff-dev-status.edn`.
-- `.biff-dev-status.edn` SHOULD record the latest eval/test status in a form
+- `.biff-dev-status.edn` SHOULD record a single latest overall status in a form
   that agents or UI overlays can inspect easily.
+- If evaluation fails, `dev` SHOULD NOT run the test suite against stale code.
 - `dev` MUST run the full test suite on each relevant save, matching the old
   Biff behavior.
 
@@ -75,4 +76,5 @@ Start a local nREPL server without booting the app.
 ## Open questions
 
 - Exact flag name for agent/service CSS mode in `dev`.
-- Exact schema/content of `.biff-dev-status.edn`.
+- Exact schema/content of `.biff-dev-status.edn` beyond the single overall
+  status model.
