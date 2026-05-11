@@ -39,8 +39,10 @@ in app-specific watcher code.
 - Coding-agent sandboxes MAY run `dev` under a systemd service that uses the
   minified-CSS flag.
 - Evaluation failures and test failures MUST be surfaced loudly in the terminal.
-- A machine-readable failure signal for coding agents is desirable but is not
-  yet specified.
+- `dev` MUST maintain a machine-readable status file at
+  `.biff-dev-status.edn`.
+- `.biff-dev-status.edn` SHOULD record the latest eval/test status in a form
+  that agents or UI overlays can inspect easily.
 - `dev` MUST run the full test suite on each relevant save, matching the old
   Biff behavior.
 
@@ -73,4 +75,4 @@ Start a local nREPL server without booting the app.
 ## Open questions
 
 - Exact flag name for agent/service CSS mode in `dev`.
-- Whether `dev` should expose a machine-readable error state for coding agents.
+- Exact schema/content of `.biff-dev-status.edn`.
