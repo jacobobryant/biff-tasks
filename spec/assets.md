@@ -23,6 +23,9 @@ Compile the app stylesheet from `resources/tailwind.css` into the configured
   pinned version.
 - If npm, bun, or a global binary is selected, `css` MUST ignore
   `:biff.tasks/tailwind-version`.
+- `css` SHOULD remain opinionated about the managed local Tailwind binary
+  location; it does not need an extra config knob for that path in the first
+  pass.
 - `css` SHOULD continue to pass through watch/minify-style Tailwind flags rather
   than inventing a second flag layer unless a Biff-specific flag adds real
   value.
