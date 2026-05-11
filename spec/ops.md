@@ -106,6 +106,8 @@ canonical setup script shipped inside `biff-tasks`.
 - The setup script SHOULD create `/home/$APP/repo` as an empty directory.
 - The setup script MUST NOT own git repo bootstrap beyond creating that
   directory; `deploy` owns repo initialization.
+- `prod-install` MUST remain separate from `deploy`; it MUST NOT automatically
+  ship or restart app code as part of provisioning.
 
 ### Recommended default direction
 
