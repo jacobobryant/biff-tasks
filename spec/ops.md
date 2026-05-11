@@ -82,6 +82,8 @@ canonical setup script shipped inside `biff-tasks`.
   `resources/com/biffweb/tasks/server-setup.sh`.
 - `prod-install` MUST upload that script to the server and run it remotely as
   root.
+- `prod-install` MUST assume direct SSH access as `root` rather than relying on
+  remote `sudo` escalation.
 - `prod-install` MUST read the server-side app/deployment name from
   `:biff.tasks/deployment-name`.
 - `prod-install` MUST read the target host/domain from `:biff.tasks/domain`.
