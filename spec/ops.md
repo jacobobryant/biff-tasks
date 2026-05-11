@@ -95,6 +95,8 @@ canonical setup script shipped inside `biff-tasks`.
   name from config.
 - The setup script SHOULD be idempotent enough that rerunning it repairs or
   reapplies expected Biff-managed server state.
+- Repeated `prod-install` runs MUST be non-destructive to other Biff apps that
+  are already configured on the same server.
 - `prod-install` MUST own only the shared Biff server baseline, not arbitrary
   app-specific provisioning.
 - App-specific extra provisioning SHOULD live in separate user-managed scripts or
