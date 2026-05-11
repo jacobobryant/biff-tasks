@@ -37,10 +37,9 @@ in app-specific watcher code.
 
 - The default `dev` mode SHOULD optimize for fast local human feedback.
 - `dev` MUST default to unminified CSS output.
-- `dev` SHOULD support an explicit flag for agent/service mode so CSS can be
-  built minified when desired.
+- `dev` SHOULD support an explicit `--minify-css` flag for agent/service mode.
 - Coding-agent sandboxes MAY run `dev` under a systemd service that uses the
-  minified-CSS flag.
+  `--minify-css` flag.
 - Evaluation failures and test failures MUST be surfaced loudly in the terminal.
 - `dev` MUST maintain a machine-readable status file at
   `.biff-dev-status.edn`.
@@ -85,5 +84,4 @@ Start a local nREPL server without booting the app.
 
 ## Open questions
 
-- Exact flag name for agent/service CSS mode in `dev`.
 - Exact schema/content of `.biff-dev-status.edn`.
