@@ -35,9 +35,13 @@ Apply the default Biff 2.0 formatting rules with `cljfmt`.
 
 ### Behavioral contract
 
-- `format` MUST format the repo's Clojure source and test files.
-- `format` SHOULD format common Clojure-adjacent config files that `cljfmt`
-  supports.
+- `format` MUST derive its main formatting scope from `deps.edn`.
+- `format` MUST format files under every path listed in the top-level `:paths`
+  vector in `deps.edn`.
+- `format` MUST also format files under paths listed in alias-specific
+  `:extra-paths` vectors in `deps.edn`.
+- `format` SHOULD also format top-level `.clj`, `.cljs`, `.cljc`, and `.edn`
+  files in the repo root.
 - `format` MUST enable aligned map bindings and aligned `let` bindings.
 - `format` MUST be safe to run repeatedly without introducing further diffs once
   the repo is formatted.
@@ -49,6 +53,5 @@ Apply the default Biff 2.0 formatting rules with `cljfmt`.
 
 ## Open questions
 
-- Exact default file globs for `format`.
 - Whether `setup` should also write a default `cljfmt.edn` or equivalent config
   file when missing.
