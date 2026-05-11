@@ -82,6 +82,10 @@ canonical setup script shipped inside `biff-tasks`.
   `resources/com/biffweb/tasks/server-setup.sh`.
 - `prod-install` MUST upload that script to the server and run it remotely as
   root.
+- `prod-install` MUST read the target SSH host from `:biff.tasks/server`.
+- `prod-install` MUST read the server-side app/deployment name from
+  `:biff.tasks/deployment-name`.
+- `prod-install` MUST read the public domain from `:biff.tasks/domain`.
 - `prod-install` MUST NOT require the app repo to check in its own copy of the
   server setup script.
 - `prod-install` SHOULD support repeated runs on the same server so multiple
@@ -106,7 +110,6 @@ canonical setup script shipped inside `biff-tasks`.
 
 ### Open questions
 
-- Exact config keys for app name, domain, and remote root host.
 - Whether `prod-install` should upload the script to a temp file path or to a
   stable well-known path before executing it.
 
