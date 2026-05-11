@@ -99,6 +99,8 @@ canonical setup script shipped inside `biff-tasks`.
   app-specific provisioning.
 - App-specific extra provisioning SHOULD live in separate user-managed scripts or
   tooling outside `biff-tasks`.
+- The shared Biff server baseline MUST include reverse proxy and TLS setup.
+- The first-pass baseline SHOULD provision that web front-end using Caddy.
 - The setup script SHOULD create `/home/$APP/repo` as an empty directory.
 - The setup script MUST NOT own git repo bootstrap beyond creating that
   directory; `deploy` owns repo initialization.
