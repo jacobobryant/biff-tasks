@@ -13,8 +13,6 @@
 - All task config keys MUST use `:biff.tasks/*`.
 - The new task surface does not preserve old task names by default.
 - SSH-based production tasks SHOULD use a `prod-` prefix, except for `deploy`.
-- The default workflow should optimize for explicit, reviewable behavior rather
-  than hidden automation.
 - Deployment is manual from a trusted shell; there is no default deploy GitHub
   Action.
 
@@ -32,8 +30,3 @@
 - `prod-nrepl`
 - `prod-logs`
 - `uberjar`
-
-## Commands currently not planned
-
-- `prod-dev`
-- `soft-deploy` as a separate command
