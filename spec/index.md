@@ -37,8 +37,3 @@
 
 - `prod-dev`
 - `soft-deploy` as a separate command
-
-## Open questions
-
-- Exact `uberjar` behavior beyond the current minimal packaging contract.
-- Exact semantics of `--soft` if the old `prod-dev` flow is not carried forward.

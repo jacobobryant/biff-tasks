@@ -46,6 +46,9 @@ to reason about from a trusted machine.
 - Without `--soft`, `deploy` MUST restart the production app after the push.
 - With `--soft`, `deploy` SHOULD perform the remote no-downtime eval/reload flow
   instead of a restart.
+- With `--soft`, `deploy` SHOULD run on the server the same changed-file
+  evaluation behavior that `dev` uses locally.
+- With `--soft`, `deploy` MUST NOT run tests on the server.
 - The default intended operator flow is a human running `deploy` from a trusted
   machine where checking logs is convenient.
 - `deploy` SHOULD provision `/home/$APP/repo` as a git repo if it does not yet
@@ -128,7 +131,3 @@ canonical setup script shipped inside `biff-tasks`.
 
 - `prod-logs` MUST tail production logs over SSH.
 - `prod-logs` SHOULD default to recent lines plus follow mode.
-
-## Open questions
-
-- Exact semantics of `--soft` if the old `prod-dev` flow is not carried forward.

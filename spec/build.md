@@ -7,10 +7,10 @@
 ## uberjar
 
 - `uberjar` MUST remain available as an optional packaging path.
+- `uberjar` MUST delete `target/` before building.
 - `uberjar` MUST generate minified CSS before building.
 - `uberjar` MUST compile the configured main namespace and package app resources.
-- `uberjar` SHOULD continue to support skipping the pre-build clean step via an
-  explicit flag.
+- `uberjar` MUST NOT run the test suite.
 
 ## Non-goals
 
