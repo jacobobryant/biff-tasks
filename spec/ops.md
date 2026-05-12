@@ -68,6 +68,8 @@ to reason about from a trusted machine.
 ## prod-restart
 
 - `prod-restart` MUST restart the systemd-managed app service over SSH.
+- `prod-restart` MUST target the systemd unit name derived from
+  `:biff.tasks/deployment-name`.
 
 ## prod-install
 
@@ -123,9 +125,12 @@ canonical setup script shipped inside `biff-tasks`.
 ## prod-nrepl
 
 - `prod-nrepl` MUST open an SSH tunnel to the production nREPL port.
+- `prod-nrepl` MUST use `:biff.tasks/nrepl-port` as the remote port.
 - `prod-nrepl` MUST write the local forwarded port to `.nrepl-port`.
 
 ## prod-logs
 
 - `prod-logs` MUST tail production logs over SSH.
-- `prod-logs` SHOULD default to recent lines plus follow mode.
+- `prod-logs` MUST target the systemd unit name derived from
+  `:biff.tasks/deployment-name`.
+- `prod-logs` SHOULD default to `journalctl -u <service> -n 300 -f`.
