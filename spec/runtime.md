@@ -45,13 +45,17 @@ in app-specific watcher code.
   `.biff-dev-status.edn`.
 - `.biff-dev-status.edn` SHOULD record a single latest overall status in a form
   that agents or UI overlays can inspect easily.
+- `.biff-dev-status.edn` SHOULD include at least `:timestamp` and `:status`.
 - The status file SHOULD support at least a `:running` state while eval/test
   work is in progress.
 - `dev` SHOULD update the status file in a way that avoids getting stuck in
   `:running` after failures or interruptions (for example, by using
   try/finally-style cleanup around status transitions).
-- The status file SHOULD include rich failure details such as stack traces or
-  test output, not just a short summary.
+- On evaluation failure, the status file SHOULD include an `:eval-failure` key.
+- On test failure, the status file SHOULD include a `:test-failure` key.
+- `:eval-failure` and `:test-failure` SHOULD preserve the underlying failure data
+  returned by the respective evaluation and test code, rather than reducing it
+  to a short summary.
 - If evaluation fails, `dev` SHOULD NOT run the test suite against stale code.
 - `dev` MUST run the full test suite on each relevant save, matching the old
   Biff behavior.
@@ -81,7 +85,3 @@ Start a local nREPL server without booting the app.
 - `nrepl` MUST start an nREPL server locally.
 - `nrepl` MUST NOT start the app.
 - `nrepl` MUST write the selected port to `.nrepl-port`.
-
-## Open questions
-
-- Exact schema/content of `.biff-dev-status.edn`.
