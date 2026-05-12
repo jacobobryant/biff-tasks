@@ -84,4 +84,7 @@ Start a local nREPL server without booting the app.
 
 - `nrepl` MUST start an nREPL server locally.
 - `nrepl` MUST NOT start the app.
+- If `:biff.tasks/nrepl-port` is set, `nrepl` MUST use that port.
+- If `:biff.tasks/nrepl-port` is not set, `nrepl` SHOULD defer to the nREPL
+  library's default port-selection behavior.
 - `nrepl` MUST write the selected port to `.nrepl-port`.
