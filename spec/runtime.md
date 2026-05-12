@@ -70,6 +70,9 @@ Run tests with Cognitect test runner.
 
 - `test` MUST run the project's tests from the `test/` path with Cognitect test
   runner.
+- `test` SHOULD rely on the starter app's `:run` alias to make `test/`
+  available on the classpath, rather than adding extra task-specific classpath
+  handling.
 - `test` MUST exit nonzero when any test fails or errors.
 - `test` SHOULD remain simple and explicit; task-specific watch behavior belongs
   in `dev`, not in `test`.
