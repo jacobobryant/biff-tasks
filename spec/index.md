@@ -6,7 +6,7 @@
 - `assets.md` — CSS compilation and code formatting
 - `runtime.md` — local development, test running, and local nREPL
 - `ops.md` — deploy and production SSH tasks
-- `build.md` — clean and uberjar
+- `build.md` — uberjar packaging
 
 ## Cross-cutting decisions
 
@@ -31,7 +31,6 @@
 - `prod-restart`
 - `prod-nrepl`
 - `prod-logs`
-- `clean`
 - `uberjar`
 
 ## Commands currently not planned
@@ -41,7 +40,5 @@
 
 ## Open questions
 
-- How should `dev` surface evaluation/test failures so that coding agents notice
-  them quickly?
-- What should the exact flag be for agent-friendly/minified CSS in `dev`?
-- Exact config contract for `prod-install`.
+- Exact `uberjar` behavior beyond the current minimal packaging contract.
+- Exact semantics of `--soft` if the old `prod-dev` flow is not carried forward.

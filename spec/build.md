@@ -2,14 +2,7 @@
 
 ## Commands covered
 
-- `clean`
 - `uberjar`
-
-## clean
-
-- `clean` MUST delete generated build output.
-- `clean` SHOULD remain narrow and predictable rather than deleting broad swaths
-  of project state.
 
 ## uberjar
 
