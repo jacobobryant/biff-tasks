@@ -120,8 +120,6 @@ canonical setup script shipped inside `biff-tasks`.
 - `prod-install` SHOULD upload the setup script to a temporary remote path,
   execute it, and clean it up afterward.
 
-### Open questions
-
 ## prod-nrepl
 
 - `prod-nrepl` MUST open an SSH tunnel to the production nREPL port.

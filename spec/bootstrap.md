@@ -45,8 +45,3 @@ The initial default generated artifacts are:
   default generated workflow.
 - `setup` is not responsible for preserving compatibility with old Biff task
   names or config keys.
-
-## Open questions
-
-- Provisioning is intentionally not owned by `setup`; it will be specified
-  separately in production-task specs.
