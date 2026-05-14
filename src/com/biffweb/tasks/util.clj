@@ -4,7 +4,8 @@
    Or at least, if they do have external deps, they use `requiring-resolve` so as not to slow down
    other tasks."
   (:refer-clojure :exclude [future])
-  (:require [clojure.java.io :as io]
+  (:require [clojure.edn :as edn]
+            [clojure.java.io :as io]
             [clojure.java.shell :as sh]
             [clojure.stacktrace :as st]
             [clojure.string :as str]))
@@ -43,6 +44,18 @@
 
 (defn exists? [f]
   (.exists (io/file f)))
+
+(defn read-deps-edn []
+  (-> "deps.edn"
+      slurp
+      edn/read-string))
+
+(defn deps-paths []
+  (let [{:keys [paths aliases]} (read-deps-edn)]
+    (->> (concat paths (mapcat :extra-paths (vals aliases)))
+         distinct
+         (filter exists?)
+         vec)))
 
 (defn shell-quote [s]
   (str "'"
@@ -157,31 +170,21 @@
 (defn ssh-capture-shell [ctx command]
   (sh/sh "ssh" (ssh-target ctx) "sh" "-lc" command))
 
-(defn ensure-private-file! [path]
-  (when (and (not (windows?)) (exists? path))
-    ((requiring-resolve 'babashka.fs/set-posix-file-permissions) path "rw-------")))
-
 (defn- deploy-file-spec [file]
-  (cond
-    (string? file) {:local file :remote file}
-    (vector? file) (let [[local remote] file]
-                     {:local local :remote remote})
-    (map? file) {:local  (or (:local file) (:src file))
-                 :remote (or (:remote file) (:dest file) (:local file) (:src file))}
-    :else (throw (ex-info "Invalid deploy file spec" {:file file}))))
+  (if (string? file)
+    {:src file :dest file}
+    file))
 
 (defn deploy-file-specs [deploy-untracked-files]
   (mapv deploy-file-spec deploy-untracked-files))
 
 (defn push-deploy-files! [{:biff.tasks/keys [deploy-untracked-files] :as ctx}]
   (let [files (->> (deploy-file-specs deploy-untracked-files)
-                   (filterv (comp exists? :local)))]
-    (doseq [{:keys [local]} files]
-      (ensure-private-file! local))
+                   (filterv (comp exists? :src)))]
     (when-some [dirs (not-empty (->> files
                                      (keep (comp not-empty
                                                  (requiring-resolve 'babashka.fs/parent)
-                                                 :remote))
+                                                 :dest))
                                      distinct
                                      vec))]
       (ssh-run-shell ctx
@@ -189,8 +192,8 @@
                           (str/join " "
                                     (map #(shell-quote (str (remote-repo-path ctx) "/" %))
                                          dirs)))))
-    (doseq [{:keys [local remote]} files]
-      (shell "scp" local (str (ssh-target ctx) ":" (remote-repo-path ctx) "/" remote)))))
+    (doseq [{:keys [src dest]} files]
+      (shell "scp" src (str (ssh-target ctx) ":" (remote-repo-path ctx) "/" dest)))))
 
 (defn current-git-branch []
   (let [{:keys [exit out]} (sh/sh "git" "branch" "--show-current")

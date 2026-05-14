@@ -9,13 +9,13 @@
   (let [{:biff.tasks/keys [css-output tailwind-version]} (util/read-config)
         {:keys [local-bin-installed tailwind-cmd]}       (util/tailwind-installation-info)
         installed-version                                (when (= tailwind-cmd :local-bin)
-                                                           (util/local-tailwind-version))
-        pinned-version-mismatch?                         (and tailwind-version
-                                                              local-bin-installed
-                                                              (not= installed-version tailwind-version))]
-    (when (or (and (= tailwind-cmd :local-bin) (not local-bin-installed))
-              pinned-version-mismatch?)
-      (install-tailwind/install-tailwind))
+                                                           (util/local-tailwind-version))]
+    (when (= tailwind-cmd :local-bin)
+      (when (or (not local-bin-installed)
+                (and tailwind-version
+                     local-bin-installed
+                     (not= installed-version tailwind-version)))
+        (install-tailwind/install-tailwind)))
     (when (= tailwind-cmd :local-bin)
       (.setExecutable (io/file (util/local-tailwind-path)) true))
     (try
