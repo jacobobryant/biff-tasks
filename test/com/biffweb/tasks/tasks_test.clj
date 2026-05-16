@@ -1,10 +1,15 @@
 (ns com.biffweb.tasks.tasks-test
   (:require [clojure.java.io :as io]
+            [clojure.string :as str]
             [clojure.test :refer [deftest is]]
+            [cljfmt.config :as cljfmt-config]
+            [cljfmt.tool :as cljfmt]
             [com.biffweb.tasks :as tasks]
             [com.biffweb.tasks.css :as css]
+            [com.biffweb.tasks.deploy :as deploy]
             [com.biffweb.tasks.format :as tasks-format]
             [com.biffweb.tasks.install-tailwind :as install-tailwind]
+            [com.biffweb.tasks.reload :as reload]
             [com.biffweb.tasks.util :as util]))
 
 (defn- rmrf [file]
@@ -92,3 +97,43 @@
       (tasks-format/format))
     (is (= "(defn add [x y]\n  (+ x y))\n"
            (slurp (io/file dir "src/com/example.clj"))))))
+
+(deftest format-allows-project-config-to-override-defaults
+  (let [opts (atom nil)]
+    (with-redefs [cljfmt/fix                #(reset! opts %)
+                  cljfmt-config/load-config (constantly {:align-form-columns? false})
+                  util/deps-paths           (constantly ["src"])]
+      (tasks-format/format))
+    (is (false? (:align-form-columns? @opts)))))
+
+(deftest full-reload-plan-uses-dependency-order-from-source-paths
+  (with-temp-dir [dir]
+    (write-file dir "src/com/example/util.clj"
+                "(ns com.example.util)\n(defn meaning [] 42)\n")
+    (write-file dir "src/com/example/app.clj"
+                "(ns com.example.app\n  (:require [com.example.util :as util]))\n(defn run [] (util/meaning))\n")
+    (write-file dir "test/com/example/app_test.clj"
+                "(ns com.example.app-test)\n")
+    (is (= ["src/com/example/util.clj"
+            "src/com/example/app.clj"]
+           (:load-files (reload/full-reload-plan (.getPath dir)
+                                                 [(.getPath (io/file dir "src"))]))))))
+
+(deftest soft-deploy-sends-plain-load-file-form-over-nrepl
+  (let [commands (atom [])]
+    (with-redefs [reload/full-reload-plan (constantly {:load-files ["src/com/example/util.clj"
+                                                                    "src/com/example/app.clj"]})
+                  util/source-paths       (constantly ["src"])
+                  util/ssh-run            (fn [_ctx & args]
+                                            (swap! commands conj (vec args)))]
+      (#'com.biffweb.tasks.deploy/soft-deploy!
+       {:biff.tasks/deployment-name "app"
+        :biff.tasks/nrepl-port      7888}))
+    (let [[command port-flag port eval-flag form] (first @commands)]
+      (is (= ["trench" "-p" "7888" "-e"] [command port-flag port eval-flag]))
+      (is (str/includes? form "src/com/example/util.clj"))
+      (is (str/includes? form "src/com/example/app.clj"))
+      (is (< (.indexOf form "src/com/example/util.clj")
+             (.indexOf form "src/com/example/app.clj")))
+      (is (str/includes? form "/home/app/repo"))
+      (is (not (str/includes? form "com.biffweb.tasks.dev"))))))

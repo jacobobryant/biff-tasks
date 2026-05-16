@@ -1,6 +1,5 @@
 (ns com.biffweb.tasks.uberjar
   (:require
-   [babashka.fs :as fs]
    [clojure.tools.build.api :as clj-build]
    [com.biffweb.cljrun :as cljrun]
    [com.biffweb.tasks.util :as util]))
@@ -13,8 +12,7 @@
         basis                                                   (clj-build/create-basis {:project "deps.edn"})
         uber-file                                               "target/jar/app.jar"]
     (println "Cleaning...")
-    (when (fs/exists? "target")
-      (fs/delete-tree "target"))
+    (clj-build/delete {:path "target"})
     (println "Generating CSS...")
     (cljrun/run-task "css" "--minify")
     (println "Calling" generate-assets-fn "...")

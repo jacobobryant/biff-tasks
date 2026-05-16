@@ -50,6 +50,13 @@
       slurp
       edn/read-string))
 
+(defn source-paths []
+  (let [{:keys [paths]} (read-deps-edn)]
+    (->> paths
+         distinct
+         (filter exists?)
+         vec)))
+
 (defn deps-paths []
   (let [{:keys [paths aliases]} (read-deps-edn)]
     (->> (concat paths (mapcat :extra-paths (vals aliases)))

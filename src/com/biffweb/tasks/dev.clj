@@ -51,7 +51,7 @@
 (defn eval-changed-files!
   "Evaluates changed local Clojure source files in the current JVM."
   []
-  (let [result (reload/refresh! (util/deps-paths))]
+  (let [result (reload/refresh! (util/source-paths))]
     (when (instance? Throwable result)
       (throw result))
     result))

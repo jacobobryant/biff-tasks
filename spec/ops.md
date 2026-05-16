@@ -46,9 +46,17 @@ to reason about from a trusted machine.
 - Without `--soft`, `deploy` MUST restart the production app after the push.
 - With `--soft`, `deploy` SHOULD perform the remote no-downtime eval/reload flow
   instead of a restart.
-- With `--soft`, `deploy` SHOULD run on the server the same changed-file
-  evaluation behavior that `dev` uses locally.
+- With `--soft`, `deploy` SHOULD use the same tools.namespace-based dependency
+  ordering that `dev` uses locally for evaluating project source files.
+- With `--soft`, `deploy` SHOULD compute that reload plan on the trusted local
+  machine and send ordinary evaluation forms over nREPL, rather than requiring
+  a deploy-helper namespace from `biff-tasks` to be on the production
+  classpath.
+- With `--soft`, the production process MUST only need nREPL access plus the
+  checked-out repo tree that `deploy` has already updated.
 - With `--soft`, `deploy` MUST NOT run tests on the server.
+- With `--soft`, `deploy` MAY leave deleted code or removed vars resident in
+  the running process; matching a fresh boot is a non-goal for soft deploys.
 - The default intended operator flow is a human running `deploy` from a trusted
   machine where checking logs is convenient.
 - `deploy` SHOULD provision `/home/$APP/repo` as a git repo if it does not yet

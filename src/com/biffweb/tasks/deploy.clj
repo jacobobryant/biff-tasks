@@ -1,5 +1,6 @@
 (ns com.biffweb.tasks.deploy
   (:require [com.biffweb.cljrun :as cljrun]
+            [com.biffweb.tasks.reload :as reload]
             [com.biffweb.tasks.util :as util]))
 
 (defn- git-push-url [ctx]
@@ -28,17 +29,25 @@
    (str "git -C " (util/shell-quote (util/remote-repo-path ctx))
         " checkout -f " (util/shell-quote branch))))
 
+(defn- remote-load-form [repo-path {:keys [load-files]}]
+  (pr-str
+   `(do
+      (doseq [rel-path# '~load-files]
+        (load-file (str ~repo-path "/" rel-path#)))
+      :ok)))
+
 (defn- soft-deploy! [ctx]
   (let [{:biff.tasks/keys [nrepl-port]} ctx]
     (when-not nrepl-port
       (throw (ex-info ":biff.tasks/nrepl-port must be set for deploy --soft." {})))
-    (util/ssh-run
-     ctx
-     "trench"
-     "-p"
-     (str nrepl-port)
-     "-e"
-     "(do (require 'com.biffweb.tasks.dev) (com.biffweb.tasks.dev/eval-changed-files!))")))
+    (let [reload-plan (reload/full-reload-plan "." (util/source-paths))]
+      (util/ssh-run
+       ctx
+       "trench"
+       "-p"
+       (str nrepl-port)
+       "-e"
+       (remote-load-form (util/remote-repo-path ctx) reload-plan)))))
 
 (defn deploy
   "Pushes code to the server and either restarts it or performs a soft reload."
