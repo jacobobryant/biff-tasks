@@ -10,9 +10,6 @@
 
 (defonce global-tracker (atom (track/tracker)))
 
-;; clojure.tools.namespace.repl/remove-disabled is private, so we hold onto its
-;; var directly. It removes namespaces marked as disabled from the tracker before
-;; tools.namespace computes load order.
 (def remove-disabled #'clojure.tools.namespace.repl/remove-disabled)
 
 (defn- classpath-entries []
@@ -44,20 +41,11 @@
       str
       (str/replace "\\" "/")))
 
-(defn- project-directories [project-root directories]
-  (let [project-path (.toPath (.getCanonicalFile (io/file project-root)))]
-    (->> directories
-         (map #(-> (io/file %) .getCanonicalFile .toPath))
-         (filter #(.startsWith ^java.nio.file.Path % project-path))
-         (mapv str))))
-
 (defn full-reload-plan
-  "Builds a dependency-ordered list of source files to load from scratch,
-   limited to source directories in the current project."
+  "Builds a dependency-ordered list of source files to load from scratch."
   [project-root directories]
   (let [tracker  (-> (track/tracker)
-                     (dir/scan-dirs (project-directories project-root directories)
-                                    {:add-all? true})
+                     (dir/scan-dirs directories {:add-all? true})
                      remove-disabled)
         ns->file (into {}
                        (map (fn [[file ns-sym]]
