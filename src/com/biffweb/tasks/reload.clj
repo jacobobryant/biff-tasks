@@ -10,6 +10,9 @@
 
 (defonce global-tracker (atom (track/tracker)))
 
+;; clojure.tools.namespace.repl/remove-disabled is private, so we hold onto its
+;; var directly. It removes namespaces marked as disabled from the tracker before
+;; tools.namespace computes load order.
 (def remove-disabled #'clojure.tools.namespace.repl/remove-disabled)
 
 (defn- classpath-entries []
