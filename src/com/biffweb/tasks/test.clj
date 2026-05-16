@@ -1,18 +1,14 @@
 (ns com.biffweb.tasks.test
   (:refer-clojure :exclude [test])
-  (:require [clojure.java.process :as process]))
+  (:require [cognitect.test-runner.api :as test-runner]))
+
+(defn run-tests []
+  (or (test-runner/test {:dirs ["test"]})
+      {:fail 0 :error 0}))
 
 (defn test
   "Runs project tests from the test/ path."
   []
-  (let [proc (process/start {:in :inherit
-                             :out :inherit
-                             :err :inherit}
-                            "java"
-                            "-cp" (System/getProperty "java.class.path")
-                            "clojure.main"
-                            "-e"
-                            "(let [{:keys [fail error] :or {fail 0 error 0}} (or ((requiring-resolve 'cognitect.test-runner.api/test) {:dirs [\"test\"]}) {})]\n  (shutdown-agents)\n  (System/exit (if (zero? (+ fail error)) 0 1)))")
-        exit-code (.waitFor proc)]
-    (when-not (zero? exit-code)
-      (throw (ex-info "Tests failed" {:exit exit-code})))))
+  (let [{:keys [fail error] :as result} (merge {:fail 0 :error 0} (run-tests))]
+    (when-not (zero? (+ fail error))
+      (throw (ex-info "Tests failed" result)))))

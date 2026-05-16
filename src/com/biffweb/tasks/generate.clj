@@ -17,23 +17,23 @@
       (.exists resource-file) [:file resource-file]
       :else (throw (ex-info "Config template not found"
                             {:resource resource-name
-                             :path (.getPath resource-file)})))))
+                             :path     (.getPath resource-file)})))))
 
 (defn- render-config-template [resource-name]
   (-> (let [[source path] (template-path resource-name)]
         (case source
           :resource (slurp (io/resource path))
           :file (slurp path)))
-       (str/replace #"\{\{\s+new-secret\s+(\d+)\s+\}\}"
-                    (fn [[_ n]]
-                      (new-secret (parse-long n))))))
+      (str/replace #"\{\{\s+new-secret\s+(\d+)\s+\}\}"
+                   (fn [[_ n]]
+                     (new-secret (parse-long n))))))
 
 (defn ensure-config-files
   "Creates any missing config.env/config.prod.env files."
   []
-  (let [targets [{:path "config.env"
+  (let [targets [{:path     "config.env"
                   :resource "TEMPLATE.config.env"}
-                 {:path "config.prod.env"
+                 {:path     "config.prod.env"
                   :resource "TEMPLATE.config.prod.env"}]
         created (reduce (fn [created {:keys [path resource]}]
                           (let [target-file (io/file (project-root) path)]

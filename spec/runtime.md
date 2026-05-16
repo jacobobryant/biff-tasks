@@ -20,6 +20,8 @@ in app-specific watcher code.
   before app startup.
 - `dev` MUST start a local nREPL server and write the port to `.nrepl-port`.
 - `dev` MUST watch for changed Clojure source files and evaluate them.
+- `dev` MUST derive the source roots it evaluates from `deps.edn` `:paths`
+  rather than from hardcoded directory names.
 - `dev` MUST run tests after relevant file changes.
 - `dev` MUST keep CSS up to date during development.
 - `dev` SHOULD watch the same broad set of files as the old Biff dev workflow

@@ -1,11 +1,17 @@
 (ns com.biffweb.tasks.nrepl
-  (:require
-   [com.biffweb.tasks.util :as util]
-   [nrepl.cmdline :as nrepl-cmd]))
+  (:require [com.biffweb.tasks.util :as util]
+            [nrepl.server :as nrepl]))
 
 (defn nrepl
-  "Starts an nrepl server without starting up the application."
+  "Starts an nREPL server without starting the application."
   []
-  (let [{:biff.nrepl/keys [port args]} (util/read-config)]
+  (let [{:biff.tasks/keys [nrepl-port]} (util/read-config)
+        server                          (if nrepl-port
+                                          (nrepl/start-server :port nrepl-port)
+                                          (nrepl/start-server))
+        port                            (:port server)]
     (spit ".nrepl-port" port)
-    (apply nrepl-cmd/-main args)))
+    (println "nREPL server started on port" port)
+    (.addShutdownHook (Runtime/getRuntime)
+                      (Thread. #(nrepl/stop-server server)))
+    @(promise)))

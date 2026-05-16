@@ -12,9 +12,9 @@
                   (str/includes? os-name "windows") "windows"
                   (str/includes? os-name "linux") "linux"
                   :else "macos")
-        arch (case (System/getProperty "os.arch")
-               ("amd64" "x86_64") "x64"
-               "arm64")]
+        arch    (case (System/getProperty "os.arch")
+                  ("amd64" "x86_64") "x64"
+                  "arm64")]
     (str "tailwindcss-" os-type "-" arch (when (= os-type "windows") ".exe"))))
 
 (defn- local-tailwind-path []
@@ -26,32 +26,32 @@
   "Downloads a Tailwind binary to bin/tailwindcss."
   [& [file]]
   (let [{:biff.tasks/keys [tailwind-build tailwind-version]} config/read
-        [file inferred] (or (when file
-                              [file false])
+        [file inferred]                                      (or (when file
+                                                                   [file false])
                             ;; Backwards compatibility.
-                            (when tailwind-build
-                              [(str "tailwindcss-" tailwind-build) false])
-                            [(infer-tailwind-file) true])
-        url (str "https://github.com/tailwindlabs/tailwindcss/releases/"
-                 (if tailwind-version
-                   (str "download/" tailwind-version)
-                   "latest/download")
-                 "/"
-                 file)
-        dest (io/file (local-tailwind-path))]
+                                                                 (when tailwind-build
+                                                                   [(str "tailwindcss-" tailwind-build) false])
+                                                                 [(infer-tailwind-file) true])
+        url                                                  (str "https://github.com/tailwindlabs/tailwindcss/releases/"
+                                                                  (if tailwind-version
+                                                                    (str "download/" tailwind-version)
+                                                                    "latest/download")
+                                                                  "/"
+                                                                  file)
+        dest                                                 (io/file (local-tailwind-path))]
     (io/make-parents dest)
-     (println "Downloading"
-              (or tailwind-version "the latest version")
-              "of" file "...")
-     (when inferred
+    (println "Downloading"
+             (or tailwind-version "the latest version")
+             "of" file "...")
+    (when inferred
       (println "If that's the wrong file, set `:biff.tasks/tailwind-build` in your config and run the command again."))
-     (println)
-     (println "After the download finishes, you can avoid downloading Tailwind again for"
-              "future projects if you copy it to your path, e.g. by running:")
-     (println "  sudo cp" (local-tailwind-path) "/usr/local/bin/tailwindcss")
-     (println)
-     (io/copy (:body (hato/get url {:as :stream :http-client {:redirect-policy :normal}})) dest)
-     (.setExecutable dest true)))
+    (println)
+    (println "After the download finishes, you can avoid downloading Tailwind again for"
+             "future projects if you copy it to your path, e.g. by running:")
+    (println "  sudo cp" (local-tailwind-path) "/usr/local/bin/tailwindcss")
+    (println)
+    (io/copy (:body (hato/get url {:as :stream :http-client {:redirect-policy :normal}})) dest)
+    (.setExecutable dest true)))
 
 (defn ensure-tailwind-installed []
   (let [{:keys [local-bin-installed tailwind-cmd]} (util/tailwind-installation-info)]

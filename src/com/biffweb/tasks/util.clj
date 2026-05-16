@@ -4,7 +4,8 @@
    Or at least, if they do have external deps, they use `requiring-resolve` so as not to slow down
    other tasks."
   (:refer-clojure :exclude [future])
-  (:require [clojure.java.io :as io]
+  (:require [clojure.edn :as edn]
+            [clojure.java.io :as io]
             [clojure.java.shell :as sh]
             [clojure.stacktrace :as st]
             [clojure.string :as str]))
@@ -44,20 +45,38 @@
 (defn exists? [f]
   (.exists (io/file f)))
 
-(defn- remote-destination [{:biff.tasks/keys [server deployment-name]}]
-  (str deployment-name "@" server))
+(defn read-deps-edn []
+  (-> "deps.edn"
+      slurp
+      edn/read-string))
 
-(defn- deploy-file-spec [file]
-  (cond
-    (string? file) {:local file :remote file}
-    (vector? file) (let [[local remote] file]
-                     {:local local :remote remote})
-    (map? file) {:local (or (:local file) (:src file))
-                 :remote (or (:remote file) (:dest file) (:local file) (:src file))}
-    :else (throw (ex-info "Invalid deploy file spec" {:file file}))))
+(defn source-paths []
+  (let [{:keys [paths]} (read-deps-edn)]
+    (->> paths
+         distinct
+         (filter exists?)
+         vec)))
 
-(defn- deploy-file-specs [deploy-untracked-files]
-  (mapv deploy-file-spec deploy-untracked-files))
+(defn deps-paths []
+  (let [{:keys [paths aliases]} (read-deps-edn)]
+    (->> (concat paths (mapcat :extra-paths (vals aliases)))
+         distinct
+         (filter exists?)
+         vec)))
+
+(defn shell-quote [s]
+  (str "'"
+       (str/replace (str s) "'" "'\"'\"'")
+       "'"))
+
+(defn local-tailwind-version []
+  (when (exists? (local-tailwind-path))
+    (let [{:keys [exit out err]} (sh/sh (local-tailwind-path) "--version")
+          version-output         (some-> (or (not-empty out) (not-empty err)) str/trim)]
+      (when (and (zero? exit) (not-empty version-output))
+        (-> version-output
+            (str/replace #"^tailwindcss\s+" "")
+            (str/replace #"^v" ""))))))
 
 (defn tailwind-installation-info []
   (let [local-bin-installed (exists? (local-tailwind-path))]
@@ -70,11 +89,11 @@
        :else :local-bin)}))
 
 (def read-config
-  (memoize (fn []
-             (merge
-              {:biff.tasks/deployment-name "app"}
-              ((requiring-resolve 'com.biffweb.config/use-aero-config)
-               {})))))
+  (memoize
+   (fn []
+     (merge
+      {:biff.tasks/deployment-name "app"}
+      ((requiring-resolve 'com.biffweb.config/use-aero-config) {})))))
 
 (def ^:dynamic *shell-env* nil)
 
@@ -88,6 +107,9 @@
   (apply (requiring-resolve 'babashka.process/shell)
          {:extra-env *shell-env*}
          args))
+
+(defn shell-capture [& args]
+  (apply sh/sh args))
 
 (defn get-env-from [cmd]
   (let [{:keys [exit out]} (sh/sh "sh" "-c" (str cmd "; printenv"))]
@@ -125,62 +147,76 @@
 (defmacro with-ssh-agent [ctx & body]
   `(with-ssh-agent* ~ctx (fn [] ~@body)))
 
+(defn ssh-target [{:biff.tasks/keys [deployment-name domain]}]
+  (str deployment-name "@" domain))
+
+(defn root-ssh-target [{:biff.tasks/keys [domain]}]
+  (str "root@" domain))
+
+(defn remote-app-home [{:biff.tasks/keys [deployment-name]}]
+  (str "/home/" deployment-name))
+
+(defn remote-repo-path [ctx]
+  (str (remote-app-home ctx) "/repo"))
+
 (defn ssh-run [ctx & args]
-  (apply shell "ssh" (remote-destination ctx) args))
+  (apply shell "ssh" (ssh-target ctx) args))
 
-(defn push-files-rsync [{:biff.tasks/keys [server deployment-name deploy-untracked-files]}]
-  (let [files (->> (:out (sh/sh "git" "ls-files"))
-                   str/split-lines
-                   (map #(str/replace % #"/.*" ""))
-                   distinct
-                   (filter exists?))]
-    (doseq [{:keys [local]} (deploy-file-specs deploy-untracked-files)]
-      (when (and (not (windows?)) (exists? local))
-        ((requiring-resolve 'babashka.fs/set-posix-file-permissions) local "rw-------")))
-     (->> (concat ["rsync" "--archive" "--verbose" "--relative" "--include='**.gitignore'"
-                   "--exclude='/.git'" "--filter=:- .gitignore" "--delete-after" "--protocol=29"]
-                  files
-                  [(str (remote-destination {:biff.tasks/server server
-                                             :biff.tasks/deployment-name deployment-name})
-                        ":")])
-          (apply shell))
-     (doseq [{:keys [local remote]} (deploy-file-specs deploy-untracked-files)]
-       (when (exists? local)
-         (shell "scp" local (str (remote-destination {:biff.tasks/server server
-                                                      :biff.tasks/deployment-name deployment-name})
-                                 ":" remote))))))
+(defn ssh-root-run [ctx & args]
+  (apply shell "ssh" (root-ssh-target ctx) args))
 
-(defn push-files-git [{:biff.tasks/keys [deploy-cmd
-                                         git-deploy-cmd
-                                         deploy-from
-                                         deploy-to
-                                         deploy-untracked-files
-                                         server
-                                         deployment-name]}]
-  (when-some [files (not-empty (filterv (comp exists? :local)
-                                        (deploy-file-specs deploy-untracked-files)))]
-    (when-some [dirs (->> files
-                          (keep (comp not-empty
-                                      (requiring-resolve 'babashka.fs/parent)
-                                      :remote))
-                          not-empty)]
-      (apply shell "ssh" (str deployment-name "@" server) "mkdir" "-p" dirs))
-    (doseq [{:keys [local remote]} files]
-      (shell "scp" local (str deployment-name "@" server ":" remote))))
-  ;; deploy-cmd, deploy-from, and deploy-to are all deprecated (but still supported for backwards compatibility)
-  (if-some [git-deploy-cmd (or git-deploy-cmd deploy-cmd)]
-    (apply shell git-deploy-cmd)
-    (shell "git" "push" deploy-to deploy-from)))
+(defn ssh-run-shell [ctx command]
+  (shell "ssh" (ssh-target ctx) "sh" "-lc" command))
 
-(defn push-files [{:keys [biff.tasks/deploy-with] :as ctx}]
-  (let [deploy-with (or deploy-with
-                        (if (which "rsync")
-                          :rsync
-                          :git))]
-    (case deploy-with
-      :rsync (push-files-rsync ctx)
-      :git (push-files-git ctx)
-      (binding [*out* *err*]
-        (println "Unrecognized config option `:biff.tasks/deploy-with " deploy-with "`. Valid options are "
-                 ":rsync and :git")
-        (System/exit 2)))))
+(defn ssh-root-run-shell [ctx command]
+  (shell "ssh" (root-ssh-target ctx) "sh" "-lc" command))
+
+(defn ssh-capture [ctx & args]
+  (apply sh/sh "ssh" (ssh-target ctx) args))
+
+(defn ssh-capture-shell [ctx command]
+  (sh/sh "ssh" (ssh-target ctx) "sh" "-lc" command))
+
+(defn- deploy-file-spec [file]
+  (if (string? file)
+    {:src file :dest file}
+    file))
+
+(defn deploy-file-specs [deploy-untracked-files]
+  (mapv deploy-file-spec deploy-untracked-files))
+
+(defn push-deploy-files! [{:biff.tasks/keys [deploy-untracked-files] :as ctx}]
+  (let [files (->> (deploy-file-specs deploy-untracked-files)
+                   (filterv (comp exists? :src)))]
+    (when-some [dirs (not-empty (->> files
+                                     (keep (comp not-empty
+                                                 (requiring-resolve 'babashka.fs/parent)
+                                                 :dest))
+                                     distinct
+                                     vec))]
+      (ssh-run-shell ctx
+                     (str "mkdir -p "
+                          (str/join " "
+                                    (map #(shell-quote (str (remote-repo-path ctx) "/" %))
+                                         dirs)))))
+    (doseq [{:keys [src dest]} files]
+      (shell "scp" src (str (ssh-target ctx) ":" (remote-repo-path ctx) "/" dest)))))
+
+(defn current-git-branch []
+  (let [{:keys [exit out]} (sh/sh "git" "branch" "--show-current")
+        branch             (some-> out str/trim not-empty)]
+    (when-not (zero? exit)
+      (throw (ex-info "Failed to read the current git branch" {:exit exit})))
+    (when-not branch
+      (throw (ex-info "Deploy requires a branch checkout; HEAD is detached." {})))
+    branch))
+
+(defn ensure-clean-worktree! []
+  (let [{:keys [exit out]} (sh/sh "git" "status" "--porcelain")]
+    (when-not (zero? exit)
+      (throw (ex-info "Failed to inspect git status" {:exit exit})))
+    (when (not-empty (str/trim out))
+      (throw (ex-info "Deploy requires a clean worktree." {:status out})))))
+
+(defn git-ref-exists? [ref]
+  (= 0 (:exit (sh/sh "git" "show-ref" "--verify" "--quiet" ref))))
