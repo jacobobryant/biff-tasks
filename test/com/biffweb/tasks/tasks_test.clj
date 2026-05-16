@@ -119,6 +119,18 @@
            (:load-files (reload/full-reload-plan (.getPath dir)
                                                  [(.getPath (io/file dir "src"))]))))))
 
+(deftest full-reload-plan-ignores-directories-outside-project-root
+  (with-temp-dir [dir]
+    (with-temp-dir [dep-dir]
+      (write-file dir "src/com/example/app.clj"
+                  "(ns com.example.app)\n(defn run [] :app)\n")
+      (write-file dep-dir "src/com/dependency/lib.clj"
+                  "(ns com.dependency.lib)\n(defn run [] :dependency)\n")
+      (is (= ["src/com/example/app.clj"]
+             (:load-files (reload/full-reload-plan (.getPath dir)
+                                                  [(.getPath (io/file dir "src"))
+                                                   (.getPath (io/file dep-dir "src"))])))))))
+
 (deftest soft-deploy-sends-plain-load-file-form-over-nrepl
   (let [commands (atom [])]
     (with-redefs [reload/full-reload-plan (constantly {:load-files ["src/com/example/util.clj"
